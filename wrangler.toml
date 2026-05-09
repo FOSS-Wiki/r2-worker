@@ -5,6 +5,7 @@ compatibility_date = "2026-05-09"
 [[r2_buckets]]
 binding = "FOSSWIKI_BUCKET"
 bucket_name = "fosswiki"
+jurisdiction = "eu"
 
 [observability]
 enabled = false
