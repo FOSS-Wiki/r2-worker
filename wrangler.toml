@@ -1,4 +1,4 @@
-name = "fosswiki-r2-worker"
+name = 'r2-worker'
 main = "index.js"
 compatibility_date = "2026-05-09"
 
