@@ -121,6 +121,13 @@ export default {
       return new Response(null, { status: 200, headers: corsHeaders(origin) });
     }
 
+    if (key === "robots.txt") {
+      return new Response("User-agent: *\nDisallow: /", {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain; charset=UTF-8', ...corsHeaders(origin) },
+      });
+    }
+
     // GET / HEAD only beyond this point
     if (method !== 'GET' && method !== 'HEAD') {
       return new Response('Method Not Allowed', { status: 405 });
