@@ -122,7 +122,7 @@ export default {
     }
 
     if (key === "robots.txt") {
-      return new Response("User-agent: *\nDisallow: /", {
+      return new Response("User-agent: *\nAllow: /", {
         status: 200,
         headers: { 'Content-Type': 'text/plain; charset=UTF-8', ...corsHeaders(origin) },
       });
