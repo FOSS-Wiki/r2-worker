@@ -82,14 +82,24 @@ const ERROR_HTML = {
 };
 
 function corsHeaders(origin) {
-  if (!ALLOWED_ORIGINS.includes(origin)) return {};
-  return { ...CORS_HEADERS, 'Access-Control-Allow-Origin': origin };
+  if (!ALLOWED_ORIGINS.includes(origin)) return { Vary: 'Origin' };
+  return { ...CORS_HEADERS, 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
 }
 
 function errorPage(status) {
   return new Response(ERROR_HTML[status], {
     status,
     headers: { 'Content-Type': 'text/html; charset=UTF-8', 'Cache-Control': 'public, max-age=300' },
+  });
+}
+
+// temp/ and deleted/ are never served
+function isRestricted(key) {
+  let decoded = key;
+  try { decoded = decodeURIComponent(key); } catch { }
+  return [key, decoded].some((k) => {
+    const lower = k.toLowerCase();
+    return lower.startsWith('temp/') || lower.startsWith('deleted/');
   });
 }
 
@@ -109,18 +119,9 @@ export default {
       });
     }
 
-    // Block restricted directories from outside allowed origins
-    if (key.startsWith('temp/') || key.startsWith('deleted/')) {
-      if (!ALLOWED_ORIGINS.includes(origin)) return errorPage(403);
-    }
+    if (isRestricted(key)) return errorPage(403);
 
-    // Write operations — allowed origins only
-    if (method === 'PUT' || method === 'POST') {
-      if (!ALLOWED_ORIGINS.includes(origin)) return new Response('Forbidden', { status: 403 });
-      await env.FOSSWIKI_BUCKET.put(key, request.body, { httpMetadata: request.headers });
-      return new Response(null, { status: 200, headers: corsHeaders(origin) });
-    }
-
+    // Clankers are fine to access, Cloudflare will block AI scrapers and absorb traffic
     if (key === "robots.txt") {
       return new Response("User-agent: *\nAllow: /", {
         status: 200,
@@ -128,9 +129,8 @@ export default {
       });
     }
 
-    // GET / HEAD only beyond this point
     if (method !== 'GET' && method !== 'HEAD') {
-      return new Response('Method Not Allowed', { status: 405 });
+      return new Response('Method Not Allowed', { status: 405, headers: { Allow: 'GET, HEAD, OPTIONS' } });
     }
 
     const object = await env.FOSSWIKI_BUCKET.get(key);
